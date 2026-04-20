@@ -6,38 +6,174 @@
   <title>Calendar Event Tool</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-    .card { background: #fff; border-radius: 12px; border: 1px solid #e0e0e0; padding: 1.75rem; width: 100%; max-width: 460px; }
-    h2 { font-size: 17px; font-weight: 600; margin-bottom: 1.25rem; color: #111; }
+
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    h2 { font-size: 17px; font-weight: 600; margin-bottom: 1.5rem; color: #111; }
+
+    /* Auth */
+    .signin-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: #fff;
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .signin-btn:hover { background: #f5f5f5; }
+
+    #auth-error { font-size: 12px; color: #c0392b; margin-top: 8px; }
+
+    /* Main section */
+    #main-section { display: none; }
+
+    .user-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      font-size: 13px;
+      color: #333;
+    }
+    .signout-btn {
+      font-size: 12px;
+      color: #888;
+      cursor: pointer;
+      background: none;
+      border: none;
+      text-decoration: underline;
+    }
+    .signout-btn:hover { color: #c0392b; }
+
+    /* Labels */
     .label { font-size: 12px; color: #666; margin-bottom: 5px; }
     .section { margin-bottom: 1.1rem; }
-    input[type="date"], input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; color: #111; background: #fff; outline: none; }
-    input:focus { border-color: #4285F4; }
-    .slot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .slot-btn { background: #f7f7f7; border: 1px solid #ddd; border-radius: 8px; padding: 10px 6px; cursor: pointer; text-align: center; font-size: 13px; color: #333; transition: all 0.15s; }
-    .slot-btn:hover { background: #eef; border-color: #aac; }
-    .slot-btn.selected { background: #e8f0fe; border-color: #4285F4; color: #1a56c4; }
-    .slot-time { font-size: 11px; color: #999; margin-top: 3px; }
-    .slot-btn.selected .slot-time { color: #4285F4; }
-    .preview { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #555; margin-bottom: 1rem; min-height: 40px; line-height: 1.5; }
-    .create-btn { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: #fff; font-size: 14px; font-weight: 500; color: #111; cursor: pointer; transition: background 0.15s; }
+
+    select, input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #111;
+      background: #fff;
+      outline: none;
+    }
+    select:focus, input:focus { border-color: #4285F4; }
+
+    /* Week controls */
+    .week-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+    .week-controls .section { margin-bottom: 0; }
+
+    /* Weekday rows */
+    .weekdays-section { margin-bottom: 1.25rem; }
+
+    .weekdays-header {
+      display: grid;
+      grid-template-columns: 1fr 150px;
+      gap: 10px;
+      padding: 0 2px 6px;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 4px;
+    }
+    .weekdays-header span {
+      font-size: 11px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .day-row {
+      display: grid;
+      grid-template-columns: 1fr 150px;
+      gap: 10px;
+      align-items: center;
+      padding: 7px 2px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .day-row:last-child { border-bottom: none; }
+
+    .day-info { display: flex; flex-direction: column; gap: 1px; }
+    .day-name { font-size: 14px; font-weight: 500; color: #111; }
+    .day-date { font-size: 11px; color: #999; }
+
+    .slot-select { font-size: 13px; padding: 7px 10px; }
+    .slot-select.has-value { border-color: #4285F4; color: #1a56c4; background: #e8f0fe; }
+
+    /* Divider */
+    .section-divider { height: 1px; background: #eee; margin: 1.25rem 0; }
+
+    /* Button */
+    .create-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      color: #111;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
     .create-btn:hover:not(:disabled) { background: #f0f0f0; }
     .create-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .signin-btn { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-size: 14px; color: #333; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .signin-btn:hover { background: #f5f5f5; }
-    .status-box { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px; line-height: 1.5; display: none; }
+
+    /* Status */
+    .status-box {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
     .status-box.show { display: block; }
     .status-box.info    { background: #e8f0fe; color: #1a56c4; border: 1px solid #b3cdf7; }
     .status-box.success { background: #e6f4ea; color: #1e7e34; border: 1px solid #a8d5b0; }
     .status-box.error   { background: #fce8e6; color: #c0392b; border: 1px solid #f5b7b1; }
-    .user-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; font-size: 13px; color: #333; }
-    .signout-btn { font-size: 12px; color: #888; cursor: pointer; background: none; border: none; text-decoration: underline; }
+
+    .progress-row {
+      font-size: 12px;
+      color: #999;
+      margin-top: 6px;
+      min-height: 16px;
+    }
   </style>
 </head>
 <body>
 <div class="card">
-  <h2>Calendar Event Tool v1.0</h2>
+  <h2>Calendar Work Shifts Tool v1.0</h2>
 
+  <!-- Auth -->
   <div id="auth-section">
     <button class="signin-btn" onclick="signIn()">
       <svg width="16" height="16" viewBox="0 0 18 18">
@@ -48,50 +184,74 @@
       </svg>
       Sign in with Google
     </button>
-    <div id="auth-status" style="font-size:13px;color:#c0392b;margin-top:8px;"></div>
+    <div id="auth-error"></div>
   </div>
 
-  <div id="main-section" style="display:none;">
+  <!-- Main -->
+  <div id="main-section">
     <div class="user-row">
-      <span id="user-name"></span>
+      <span id="user-name" style="font-size:13px;color:#333;"></span>
       <button class="signout-btn" onclick="signOut()">sign out</button>
     </div>
+
+    <!-- Calendar picker -->
     <div class="section">
-      <p class="label">Select Calendar:</p>
-      <select id="user_calendars" onchange="updateSelectedCalendar()">
-	  <option value="" disabled selected>Select a calendar</option>
-	  </select>
+      <p class="label">Calendar</p>
+      <select id="calendar-select">
+        <option value="" disabled selected>Loading calendars…</option>
+      </select>
     </div>
-	<div class="section">
-      <p class="label">Date</p>
-      <input type="date" id="event-date" oninput="updatePreview()" />
-    </div>
-    <div class="section">
-      <p class="label">Time slot</p>
-      <div class="slot-grid">
-        <div class="slot-btn" onclick="selectSlot(this,'08:00','16:00')">Morning<div class="slot-time">8:00 – 16:00</div></div>
-        <div class="slot-btn" onclick="selectSlot(this,'10:00','18:00')">Mid<div class="slot-time">10:00 – 18:00</div></div>
-        <div class="slot-btn" onclick="selectSlot(this,'12:00','20:00')">Afternoon<div class="slot-time">12:00 – 20:00</div></div>
+
+    <div class="section-divider"></div>
+
+    <!-- Week picker -->
+    <div class="week-controls">
+      <div class="section">
+        <p class="label">Year</p>
+        <select id="year-select" onchange="generateWeekdays()"></select>
+      </div>
+      <div class="section">
+        <p class="label">Week</p>
+        <select id="week-select" onchange="generateWeekdays()"></select>
       </div>
     </div>
-    <div class="section">
-      <p class="label">Event title (optional)</p>
-      <input type="text" id="event-title" placeholder="My event" oninput="updatePreview()" />
+
+    <!-- Weekday rows -->
+    <div class="weekdays-section">
+      <div class="weekdays-header">
+        <span>Day</span>
+        <span>Slot</span>
+      </div>
+      <div id="weekdays-container"></div>
     </div>
-    <div class="preview" id="preview">Pick a date and time slot to preview the event.</div>
-    <button class="create-btn" id="create-btn" onclick="createCalendarEvent()" disabled>Create event in Google Calendar</button>
+
+    <button class="create-btn" id="create-btn" onclick="createEvents()">Create Events!</button>
     <div class="status-box" id="status-box"></div>
+    <div class="progress-row" id="progress-row"></div>
   </div>
 </div>
 
 <script>
   const CLIENT_ID = '1060596376056-cfi7o31mifgl2ndaf3iuoahktpl2e99g.apps.googleusercontent.com';
-  const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+  const SCOPES = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
+
+  // Time slots config
+  const SLOTS = {
+    'N/A':       null,
+    'Morning':   { start: '08:00', end: '16:00' },
+    'Mid':       { start: '10:00', end: '18:00' },
+    'Afternoon': { start: '12:00', end: '20:00' }
+  };
+
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DAY_NAMES   = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
   let tokenClient, gapiReady = false, gisReady = false;
-  let selectedStart = null, selectedEnd = null;
+
+  // ─── Boot ────────────────────────────────────────────────────────────────────
 
   function loadScript(src) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const s = document.createElement('script');
       s.src = src; s.onload = resolve;
       document.body.appendChild(s);
@@ -100,7 +260,7 @@
 
   async function initGapi() {
     await loadScript('https://apis.google.com/js/api.js');
-    await new Promise((resolve) => gapi.load('client', resolve));
+    await new Promise(resolve => gapi.load('client', resolve));
     await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] });
     gapiReady = true;
   }
@@ -114,79 +274,263 @@
   }
 
   Promise.all([initGapi(), initGis()]).catch(err => {
-    document.getElementById('auth-status').textContent = 'Failed to load Google libraries: ' + err.message;
+    document.getElementById('auth-error').textContent = 'Failed to load Google libraries: ' + err.message;
   });
 
+  // ─── Auth ────────────────────────────────────────────────────────────────────
+
   function signIn() {
-    if (!gapiReady || !gisReady) { document.getElementById('auth-status').textContent = 'Still loading, please wait.'; return; }
+    if (!gapiReady || !gisReady) {
+      document.getElementById('auth-error').textContent = 'Still loading, please wait…';
+      return;
+    }
     tokenClient.requestAccessToken({ prompt: 'consent' });
   }
 
   async function onSignInSuccess(response) {
-    if (response.error) { document.getElementById('auth-status').textContent = 'Sign-in error: ' + response.error; return; }
-    try {
-      const u = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + response.access_token } }).then(r => r.json());
-      document.getElementById('user-name').textContent = u.name || u.email;
-    } catch(e) { document.getElementById('user-name').textContent = 'Signed in'; }
+    if (response.error) {
+      document.getElementById('auth-error').textContent = 'Sign-in error: ' + response.error;
+      return;
+    }
+
+    // Set the token on the gapi client so all subsequent API calls are authenticated
+    gapi.client.setToken({ access_token: response.access_token });
+
     document.getElementById('auth-section').style.display = 'none';
     document.getElementById('main-section').style.display = 'block';
+
+    // Fetch user info to show name
+    try {
+      const u = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + response.access_token }
+      }).then(r => r.json());
+      document.getElementById('user-name').textContent = u.name || u.email || 'Signed in';
+    } catch(e) {
+      document.getElementById('user-name').textContent = 'Signed in';
+    }
+
+    await loadCalendars();
+    initYearWeekDropdowns();
+    generateWeekdays();
   }
 
   function signOut() {
     const token = gapi.client.getToken();
-    if (token) { google.accounts.oauth2.revoke(token.access_token, () => { gapi.client.setToken(null); }); }
+    if (token) {
+      google.accounts.oauth2.revoke(token.access_token, () => gapi.client.setToken(null));
+    }
     document.getElementById('auth-section').style.display = 'block';
     document.getElementById('main-section').style.display = 'none';
-    document.getElementById('event-date').value = '';
-    document.getElementById('event-title').value = '';
-    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
-    selectedStart = selectedEnd = null;
     setStatus('', '');
+    document.getElementById('progress-row').textContent = '';
   }
 
-  function selectSlot(el, start, end) {
-    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedStart = start; selectedEnd = end;
-    updatePreview();
-  }
+  // ─── Calendars ───────────────────────────────────────────────────────────────
 
-  function updatePreview() {
-    const date = document.getElementById('event-date').value;
-    const title = document.getElementById('event-title').value.trim() || 'My event';
-    const ready = date && selectedStart;
-    document.getElementById('create-btn').disabled = !ready;
-    if (!ready) { document.getElementById('preview').innerHTML = 'Pick a date and time slot to preview the event.'; return; }
-    const d = new Date(date + 'T' + selectedStart);
-    const dateStr = d.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-    document.getElementById('preview').innerHTML = '<strong>' + title + '</strong><br>' + dateStr + ' &nbsp;·&nbsp; ' + selectedStart + ' – ' + selectedEnd;
-  }
-
-  async function createCalendarEvent() {
-    const date = document.getElementById('event-date').value;
-    const title = document.getElementById('event-title').value.trim() || 'My event';
-    if (!date || !selectedStart) return;
-    const btn = document.getElementById('create-btn');
-    btn.disabled = true; btn.textContent = 'Creating…';
-    setStatus('Creating event…', 'info');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  async function loadCalendars() {
     try {
-      const response = await gapi.client.calendar.events.insert({
-        calendarId: 'primary',
-        resource: {
-          summary: title,
-          start: { dateTime: date + 'T' + selectedStart + ':00', timeZone },
-          end:   { dateTime: date + 'T' + selectedEnd   + ':00', timeZone }
+      const res = await gapi.client.calendar.calendarList.list();
+      const cals = res.result.items || [];
+      const sel = document.getElementById('calendar-select');
+  
+      sel.innerHTML = '';
+  
+      let primaryCalendarId = null;
+  
+      cals.forEach(cal => {
+        const opt = document.createElement('option');
+        opt.value = cal.id;
+        opt.textContent = cal.summary;
+  
+        if (cal.primary) {
+          primaryCalendarId = cal.id;
         }
+  
+        sel.appendChild(opt);
       });
-      console.log('Created event:', response);
-      setStatus('Event created successfully! Check your Google Calendar.', 'success');
-    } catch (err) {
-      console.error('API error:', err);
-      setStatus('Error: ' + (err.result?.error?.message || err.message || 'Unknown error'), 'error');
+  
+      // ✅ Set default to primary calendar
+      if (primaryCalendarId) {
+        sel.value = primaryCalendarId;
+      } else if (cals.length) {
+        // fallback (just in case)
+        sel.value = cals[0].id;
+      }
+  
+    } catch(e) {
+      setStatus('Could not load calendars: ' + e.message, 'error');
     }
-    btn.disabled = false; btn.textContent = 'Create event in Google Calendar';
   }
+
+  // ─── Year / Week dropdowns ───────────────────────────────────────────────────
+
+  function getISOWeek(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  }
+
+  function getISOYear(date) {
+    // ISO week year can differ from calendar year at year boundaries
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    return d.getUTCFullYear();
+  }
+
+  function getWeeksInYear(year) {
+    // A year has 53 ISO weeks if Jan 1 or Dec 31 is a Thursday (leap year: also Wed)
+    const p = (y) => (y + Math.floor(y/4) - Math.floor(y/100) + Math.floor(y/400)) % 7;
+    return (p(year) === 4 || p(year - 1) === 3) ? 53 : 52;
+  }
+
+  function initYearWeekDropdowns() {
+    const now = new Date();
+    const curYear = getISOYear(now);
+    const curWeek = getISOWeek(now);
+
+    const yearSel = document.getElementById('year-select');
+    yearSel.innerHTML = '';
+    for (let y = curYear - 2; y <= curYear + 2; y++) {
+      const opt = new Option(y, y);
+      if (y === curYear) opt.selected = true;
+      yearSel.appendChild(opt);
+    }
+    yearSel.addEventListener('change', updateWeekDropdown);
+
+    updateWeekDropdown(null, curWeek);
+  }
+
+  function updateWeekDropdown(e, selectWeek) {
+    const year = parseInt(document.getElementById('year-select').value);
+    const maxWeeks = getWeeksInYear(year);
+    const weekSel = document.getElementById('week-select');
+    const prevWeek = selectWeek ?? parseInt(weekSel.value) ?? 1;
+    weekSel.innerHTML = '';
+    for (let w = 1; w <= maxWeeks; w++) {
+      const opt = new Option('Week ' + w, w);
+      weekSel.appendChild(opt);
+    }
+    weekSel.value = Math.min(prevWeek, maxWeeks);
+    generateWeekdays();
+  }
+
+  // ─── Weekday rows ─────────────────────────────────────────────────────────────
+
+  function getMondayOfISOWeek(year, week) {
+    // Jan 4 is always in week 1
+    const jan4 = new Date(Date.UTC(year, 0, 4));
+    const dayOfWeek = jan4.getUTCDay() || 7; // Mon=1 … Sun=7
+    const monday = new Date(jan4);
+    monday.setUTCDate(jan4.getUTCDate() - (dayOfWeek - 1) + (week - 1) * 7);
+    return monday;
+  }
+
+  function generateWeekdays() {
+    const year = parseInt(document.getElementById('year-select').value);
+    const week = parseInt(document.getElementById('week-select').value);
+    const monday = getMondayOfISOWeek(year, week);
+    const container = document.getElementById('weekdays-container');
+    container.innerHTML = '';
+
+    for (let i = 0; i < 6; i++) {
+      const day = new Date(monday);
+      day.setUTCDate(monday.getUTCDate() + i);
+
+      const dayNum  = day.getUTCDate();
+      const month   = MONTH_NAMES[day.getUTCMonth()];
+      const dayName = DAY_NAMES[i];
+
+      const row = document.createElement('div');
+      row.className = 'day-row';
+      row.dataset.date = day.toISOString().split('T')[0]; // YYYY-MM-DD
+      row.dataset.dayName = dayName;
+
+      row.innerHTML = `
+        <div class="day-info">
+          <span class="day-name">${dayName}</span>
+          <span class="day-date">${dayNum} ${month}</span>
+        </div>
+        <select class="slot-select" onchange="onSlotChange(this)">
+          ${Object.keys(SLOTS).map(s => `<option value="${s}">${s}</option>`).join('')}
+        </select>
+      `;
+      container.appendChild(row);
+    }
+  }
+
+  function onSlotChange(sel) {
+    if (sel.value !== 'N/A') {
+      sel.classList.add('has-value');
+    } else {
+      sel.classList.remove('has-value');
+    }
+  }
+
+  // ─── Create events ────────────────────────────────────────────────────────────
+
+  async function createEvents() {
+    const calendarId = document.getElementById('calendar-select').value;
+    if (!calendarId) { setStatus('Please select a calendar.', 'error'); return; }
+
+    const rows = document.querySelectorAll('.day-row');
+    const toCreate = [];
+
+    rows.forEach(row => {
+      const slot = row.querySelector('.slot-select').value;
+      if (slot === 'N/A') return;
+      toCreate.push({
+        date:    row.dataset.date,
+        dayName: row.dataset.dayName,
+        slot:    slot,
+        times:   SLOTS[slot]
+      });
+    });
+
+    if (toCreate.length === 0) {
+      setStatus('No slots selected — choose at least one day.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('create-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+    setStatus('Creating ' + toCreate.length + ' event(s)…', 'info');
+
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    let created = 0, failed = 0;
+
+    for (const item of toCreate) {
+      document.getElementById('progress-row').textContent =
+        `→ ${item.dayName} (${item.slot})…`;
+      try {
+        await gapi.client.calendar.events.insert({
+          calendarId,
+          resource: {
+            summary: item.slot + ' Shift',
+            start: { dateTime: `${item.date}T${item.times.start}:00`, timeZone },
+            end:   { dateTime: `${item.date}T${item.times.end}:00`,   timeZone }
+          }
+        });
+        created++;
+      } catch(e) {
+        console.error('Failed for', item.date, e);
+        failed++;
+      }
+    }
+
+    document.getElementById('progress-row').textContent = '';
+    btn.disabled = false;
+    btn.textContent = 'Create Events!';
+
+    if (failed === 0) {
+      setStatus(`✓ ${created} event${created > 1 ? 's' : ''} created successfully.`, 'success');
+    } else {
+      setStatus(`${created} created, ${failed} failed. Check the console for details.`, 'error');
+    }
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────────
 
   function setStatus(message, type) {
     const box = document.getElementById('status-box');
