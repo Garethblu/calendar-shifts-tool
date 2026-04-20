@@ -74,7 +74,7 @@
       <input type="text" id="event-title" placeholder="My event" oninput="updatePreview()" />
     </div>
     <div class="preview" id="preview">Pick a date and time slot to preview the event.</div>
-    <button class="create-btn" id="create-btn" onclick="createEvent()" disabled>Create event in Google Calendar</button>
+    <button class="create-btn" id="create-btn" onclick="createCalendarEvent()" disabled>Create event in Google Calendar</button>
     <div class="status-box" id="status-box"></div>
   </div>
 </div>
@@ -157,7 +157,7 @@
     document.getElementById('preview').innerHTML = '<strong>' + title + '</strong><br>' + dateStr + ' &nbsp;·&nbsp; ' + selectedStart + ' – ' + selectedEnd;
   }
 
-  async function createEvent() {
+  async function createCalendarEvent() {
     const date = document.getElementById('event-date').value;
     const title = document.getElementById('event-title').value.trim() || 'My event';
     if (!date || !selectedStart) return;
