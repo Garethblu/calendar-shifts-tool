@@ -36,10 +36,9 @@
 </head>
 <body>
 <div class="card">
-  <h2>Create calendar event</h2>
+  <h2>Calendar Event Tool v1.0</h2>
 
   <div id="auth-section">
-    <p style="font-size:13px;color:#666;margin-bottom:1rem;">Sign in with Google to create events in your calendar.</p>
     <button class="signin-btn" onclick="signIn()">
       <svg width="16" height="16" viewBox="0 0 18 18">
         <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
@@ -58,6 +57,12 @@
       <button class="signout-btn" onclick="signOut()">sign out</button>
     </div>
     <div class="section">
+      <p class="label">Select Calendar:</p>
+      <select id="user_calendars" onchange="updateSelectedCalendar()">
+	  <option value="" disabled selected>Select a calendar</option>
+	  </select>
+    </div>
+	<div class="section">
       <p class="label">Date</p>
       <input type="date" id="event-date" oninput="updatePreview()" />
     </div>
