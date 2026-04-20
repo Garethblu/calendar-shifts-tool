@@ -74,63 +74,89 @@
 <script>
   const CLIENT_ID = '1060596376056-cfi7o31mifgl2ndaf3iuoahktpl2e99g.apps.googleusercontent.com';
   const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+  
   let tokenClient, gapiReady = false, gisReady = false;
-  let selectedStart = null, selectedEnd = null;
-
+  
+  // ---------- LOAD GOOGLE LIBS ----------
   function loadScript(src) {
     return new Promise((resolve) => {
       const s = document.createElement('script');
-      s.src = src; s.onload = resolve;
+      s.src = src;
+      s.onload = resolve;
       document.body.appendChild(s);
     });
   }
-
+  
   async function initGapi() {
     await loadScript('https://apis.google.com/js/api.js');
     await new Promise((resolve) => gapi.load('client', resolve));
-    await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] });
+    await gapi.client.init({
+      discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest']
+    });
     gapiReady = true;
   }
-
+  
   async function initGis() {
     await loadScript('https://accounts.google.com/gsi/client');
     tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID, scope: SCOPES, callback: onSignInSuccess
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: onSignInSuccess
     });
     gisReady = true;
   }
-
+  
   Promise.all([initGapi(), initGis()]).catch(err => {
-    document.getElementById('auth-status').textContent = 'Failed to load Google libraries: ' + err.message;
+    document.getElementById('auth-status').textContent =
+      'Failed to load Google libraries: ' + err.message;
   });
-
+  
+  // ---------- AUTH ----------
   function signIn() {
-    if (!gapiReady || !gisReady) { document.getElementById('auth-status').textContent = 'Still loading, please wait.'; return; }
+    if (!gapiReady || !gisReady) {
+      document.getElementById('auth-status').textContent = 'Still loading...';
+      return;
+    }
     tokenClient.requestAccessToken({ prompt: 'consent' });
   }
-
+  
   async function onSignInSuccess(response) {
-    if (response.error) { document.getElementById('auth-status').textContent = 'Sign-in error: ' + response.error; return; }
+    if (response.error) {
+      document.getElementById('auth-status').textContent = response.error;
+      return;
+    }
+  
     try {
-      const u = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + response.access_token } }).then(r => r.json());
-      document.getElementById('user-name').textContent = u.name || u.email;
-    } catch(e) { document.getElementById('user-name').textContent = 'Signed in'; }
+      const u = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + response.access_token }
+      }).then(r => r.json());
+  
+      document.getElementById('user-name').textContent =
+        u.name || u.email;
+    } catch {
+      document.getElementById('user-name').textContent = 'Signed in';
+    }
+  
     document.getElementById('auth-section').style.display = 'none';
     document.getElementById('main-section').style.display = 'block';
+  
+    initCurrentWeek();
   }
-
+  
+  // ---------- SIGN OUT ----------
   function signOut() {
     const token = gapi.client.getToken();
-    if (token) { google.accounts.oauth2.revoke(token.access_token, () => { gapi.client.setToken(null); }); }
+    if (token) {
+      google.accounts.oauth2.revoke(token.access_token, () => {
+        gapi.client.setToken(null);
+      });
+    }
+  
     document.getElementById('auth-section').style.display = 'block';
     document.getElementById('main-section').style.display = 'none';
-    document.getElementById('event-date').value = '';
-    document.getElementById('event-title').value = '';
-    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
-    selectedStart = selectedEnd = null;
-    setStatus('', '');
   }
-
+  
+  // ---------- WEEK LOGIC ----------
   function getDateOfISOWeek(week, year) {
     const simple = new Date(year, 0, 1 + (week - 1) * 7);
     const dow = simple.getDay();
@@ -147,14 +173,12 @@
   function renderWeek() {
     const year = parseInt(document.getElementById('year-input').value);
     const week = parseInt(document.getElementById('week-input').value);
-  
     const container = document.getElementById('week-container');
-    container.innerHTML = '';
   
+    container.innerHTML = '';
     if (!year || !week) return;
   
     const startDate = getDateOfISOWeek(week, year);
-  
     const options = ['N/A', 'Morning', 'Mid', 'Afternoon'];
   
     for (let i = 0; i < 7; i++) {
@@ -175,15 +199,18 @@
   
       row.innerHTML = `
         <span>${label}</span>
-        <select data-date="${dateStr}">
+        <select data-date="${dateStr}" onchange="checkSelections()">
           ${options.map(o => `<option value="${o}">${o}</option>`).join('')}
         </select>
       `;
   
       container.appendChild(row);
     }
+  
+    checkSelections();
   }
   
+  // ---------- SLOT TIMES ----------
   function getSlotTimes(slot) {
     switch (slot) {
       case 'Morning': return ['08:00', '16:00'];
@@ -192,7 +219,17 @@
       default: return null;
     }
   }
-
+  
+  // ---------- ENABLE BUTTON ----------
+  function checkSelections() {
+    const selects = document.querySelectorAll('#week-container select');
+    const btn = document.getElementById('create-btn');
+  
+    const hasSelection = Array.from(selects).some(s => s.value !== 'N/A');
+    btn.disabled = !hasSelection;
+  }
+  
+  // ---------- CREATE EVENTS ----------
   async function createWeekEvents() {
     const selects = document.querySelectorAll('#week-container select');
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -213,13 +250,13 @@
         await gapi.client.calendar.events.insert({
           calendarId: 'primary',
           resource: {
-            summary: 'My event',
+            summary: `${slot} shift`,
             start: { dateTime: date + 'T' + start + ':00', timeZone },
             end:   { dateTime: date + 'T' + end   + ':00', timeZone }
           }
         });
       } catch (err) {
-        console.error('Error creating event for', date, err);
+        console.error(err);
         setStatus('Error creating some events', 'error');
         return;
       }
@@ -228,11 +265,25 @@
     setStatus('All events created successfully!', 'success');
   }
   
+  // ---------- STATUS ----------
   function setStatus(message, type) {
     const box = document.getElementById('status-box');
     box.textContent = message;
-    box.className = 'status-box' + (type ? ' show ' + type : '');
+    box.className = 'status-box show ' + type;
+  }
+  
+  // ---------- DEFAULT CURRENT WEEK ----------
+  function initCurrentWeek() {
+    const now = new Date();
+    const onejan = new Date(now.getFullYear(), 0, 1);
+    const week = Math.ceil((((now - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  
+    document.getElementById('year-input').value = now.getFullYear();
+    document.getElementById('week-input').value = week;
+  
+    renderWeek();
   }
 </script>
+  
 </body>
 </html>
