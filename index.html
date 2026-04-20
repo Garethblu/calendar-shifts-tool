@@ -53,29 +53,21 @@
   </div>
 
   <div id="main-section" style="display:none;">
-    <div class="user-row">
-      <span id="user-name"></span>
-      <button class="signout-btn" onclick="signOut()">sign out</button>
-    </div>
     <div class="section">
-      <p class="label">Date</p>
-      <input type="date" id="event-date" oninput="updatePreview()" />
+      <p class="label">Year</p>
+      <input type="number" id="year-input" value="2026" oninput="renderWeek()" />
     </div>
+    
     <div class="section">
-      <p class="label">Time slot</p>
-      <div class="slot-grid">
-        <div class="slot-btn" onclick="selectSlot(this,'08:00','16:00')">Morning<div class="slot-time">8:00 – 16:00</div></div>
-        <div class="slot-btn" onclick="selectSlot(this,'10:00','18:00')">Mid<div class="slot-time">10:00 – 18:00</div></div>
-        <div class="slot-btn" onclick="selectSlot(this,'12:00','20:00')">Afternoon<div class="slot-time">12:00 – 20:00</div></div>
-      </div>
+      <p class="label">Week number</p>
+      <input type="number" id="week-input" min="1" max="53" value="1" oninput="renderWeek()" />
     </div>
-    <div class="section">
-      <p class="label">Event title (optional)</p>
-      <input type="text" id="event-title" placeholder="My event" oninput="updatePreview()" />
-    </div>
-    <div class="preview" id="preview">Pick a date and time slot to preview the event.</div>
-    <button class="create-btn" id="create-btn" onclick="createCalendarEvent()" disabled>Create event in Google Calendar</button>
-    <div class="status-box" id="status-box"></div>
+    
+    <div id="week-container" class="section"></div>
+    
+    <button class="create-btn" onclick="createWeekEvents()">
+      Create Events
+    </button>
   </div>
 </div>
 
@@ -139,50 +131,103 @@
     setStatus('', '');
   }
 
-  function selectSlot(el, start, end) {
-    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedStart = start; selectedEnd = end;
-    updatePreview();
+  function getDateOfISOWeek(week, year) {
+    const simple = new Date(year, 0, 1 + (week - 1) * 7);
+    const dow = simple.getDay();
+    const ISOweekStart = simple;
+  
+    if (dow <= 4)
+      ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+    else
+      ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+  
+    return ISOweekStart;
   }
-
-  function updatePreview() {
-    const date = document.getElementById('event-date').value;
-    const title = document.getElementById('event-title').value.trim() || 'My event';
-    const ready = date && selectedStart;
-    document.getElementById('create-btn').disabled = !ready;
-    if (!ready) { document.getElementById('preview').innerHTML = 'Pick a date and time slot to preview the event.'; return; }
-    const d = new Date(date + 'T' + selectedStart);
-    const dateStr = d.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-    document.getElementById('preview').innerHTML = '<strong>' + title + '</strong><br>' + dateStr + ' &nbsp;·&nbsp; ' + selectedStart + ' – ' + selectedEnd;
-  }
-
-  async function createCalendarEvent() {
-    const date = document.getElementById('event-date').value;
-    const title = document.getElementById('event-title').value.trim() || 'My event';
-    if (!date || !selectedStart) return;
-    const btn = document.getElementById('create-btn');
-    btn.disabled = true; btn.textContent = 'Creating…';
-    setStatus('Creating event…', 'info');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    try {
-      const response = await gapi.client.calendar.events.insert({
-        calendarId: 'primary',
-        resource: {
-          summary: title,
-          start: { dateTime: date + 'T' + selectedStart + ':00', timeZone },
-          end:   { dateTime: date + 'T' + selectedEnd   + ':00', timeZone }
-        }
+  
+  function renderWeek() {
+    const year = parseInt(document.getElementById('year-input').value);
+    const week = parseInt(document.getElementById('week-input').value);
+  
+    const container = document.getElementById('week-container');
+    container.innerHTML = '';
+  
+    if (!year || !week) return;
+  
+    const startDate = getDateOfISOWeek(week, year);
+  
+    const options = ['N/A', 'Morning', 'Mid', 'Afternoon'];
+  
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+  
+      const dateStr = d.toISOString().split('T')[0];
+      const label = d.toLocaleDateString(undefined, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'short'
       });
-      console.log('Created event:', response);
-      setStatus('Event created successfully! Check your Google Calendar.', 'success');
-    } catch (err) {
-      console.error('API error:', err);
-      setStatus('Error: ' + (err.result?.error?.message || err.message || 'Unknown error'), 'error');
+  
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.justifyContent = 'space-between';
+      row.style.marginBottom = '8px';
+  
+      row.innerHTML = `
+        <span>${label}</span>
+        <select data-date="${dateStr}">
+          ${options.map(o => `<option value="${o}">${o}</option>`).join('')}
+        </select>
+      `;
+  
+      container.appendChild(row);
     }
-    btn.disabled = false; btn.textContent = 'Create event in Google Calendar';
+  }
+  
+  function getSlotTimes(slot) {
+    switch (slot) {
+      case 'Morning': return ['08:00', '16:00'];
+      case 'Mid': return ['10:00', '18:00'];
+      case 'Afternoon': return ['12:00', '20:00'];
+      default: return null;
+    }
   }
 
+  async function createWeekEvents() {
+    const selects = document.querySelectorAll('#week-container select');
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+    setStatus('Creating events...', 'info');
+  
+    for (const sel of selects) {
+      const slot = sel.value;
+      if (slot === 'N/A') continue;
+  
+      const date = sel.dataset.date;
+      const times = getSlotTimes(slot);
+      if (!times) continue;
+  
+      const [start, end] = times;
+  
+      try {
+        await gapi.client.calendar.events.insert({
+          calendarId: 'primary',
+          resource: {
+            summary: 'My event',
+            start: { dateTime: date + 'T' + start + ':00', timeZone },
+            end:   { dateTime: date + 'T' + end   + ':00', timeZone }
+          }
+        });
+      } catch (err) {
+        console.error('Error creating event for', date, err);
+        setStatus('Error creating some events', 'error');
+        return;
+      }
+    }
+  
+    setStatus('All events created successfully!', 'success');
+  }
+  
   function setStatus(message, type) {
     const box = document.getElementById('status-box');
     box.textContent = message;
