@@ -53,14 +53,14 @@
 
   <div id="main-section" style="display:none;">
     <div class="user-row">
-      <span id="user-name"></span>
-      <button class="signout-btn" onclick="signOut()">sign out</button>
+		<span id="user-name"></span>
+		<button class="signout-btn" onclick="signOut()">sign out</button>
     </div>
     <div class="section">
-      <p class="label">Selected Calendar:</p>
-      <select id="user_calendars" onchange="updateSelectedCalendar()">
-	  <option value="" disabled selected>...</option>
-	  </select>
+		<p class="label">Selected Calendar:</p>
+		<select id="user_calendars" onchange="updateSelectedCalendar()">
+		<option value="" disabled selected>...</option>
+		</select>
     </div>
 	<div class="section" style="display: flex; gap: 10px; align-items: center;">
 	  <div>
@@ -73,9 +73,9 @@
 	  </div>
 	</div>
     <div class="section">
-      <p class="label">Weekdays</p>
-
-    </div>
+		<p class="label">Weekdays</p>
+		<div id="weekdays-container"></div>
+	</div>
     <button class="create-btn" id="create-btn" onclick="createCalendarEvent()" disabled>Create events!</button>
     <div class="status-box" id="status-box"></div>
   </div>
@@ -83,7 +83,7 @@
 
 <script>
   const CLIENT_ID = '1060596376056-cfi7o31mifgl2ndaf3iuoahktpl2e99g.apps.googleusercontent.com';
-  const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+  const SCOPES = 'https://www.googleapis.com/auth/calendar';
   let tokenClient, gapiReady = false, gisReady = false;
   let selectedStart = null, selectedEnd = null;
 
@@ -119,13 +119,70 @@
     tokenClient.requestAccessToken({ prompt: 'consent' });
   }
 
+	async function loadUserCalendars() {
+		const res = await gapi.client.calendar.calendarList.list();
+		const calendars = res.result.items;
+
+		const dropdown = document.getElementById("user_calendars");
+		dropdown.innerHTML = "";
+
+		calendars.forEach(cal => {
+		const option = document.createElement("option");
+		option.value = cal.id;
+		option.textContent = cal.summary;
+		dropdown.appendChild(option);
+		});
+
+		// Select first by default
+		if (calendars.length > 0) {
+		dropdown.value = calendars[0].id;
+		}
+	}
+	
+	function initYearWeek() {
+		const now = new Date();
+
+		function getISOWeek(date) {
+			const temp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+			temp.setUTCDate(temp.getUTCDate() + 4 - (temp.getUTCDay() || 7));
+			const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
+			return Math.ceil((((temp - yearStart) / 86400000) + 1) / 7);
+		  }
+
+		  const currentYear = now.getFullYear();
+		  const currentWeek = getISOWeek(now);
+
+		  const yearDropdown = document.getElementById("year");
+		  const weekDropdown = document.getElementById("week");
+
+		  yearDropdown.innerHTML = "";
+		  weekDropdown.innerHTML = "";
+
+		  for (let y = currentYear - 5; y <= currentYear + 5; y++) {
+			const opt = new Option(y, y);
+			if (y === currentYear) opt.selected = true;
+			yearDropdown.appendChild(opt);
+		  }
+
+		  for (let w = 1; w <= 53; w++) {
+			const opt = new Option("Week " + w, w);
+			if (w === currentWeek) opt.selected = true;
+			weekDropdown.appendChild(opt);
+		  }
+	}
+
   async function onSignInSuccess(response) {
     if (response.error) { document.getElementById('auth-status').textContent = 'Sign-in error: ' + response.error; return; }
     try {
       const u = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + response.access_token } }).then(r => r.json());
       document.getElementById('user-name').textContent = u.name || u.email;
     } catch(e) { document.getElementById('user-name').textContent = 'Signed in'; }
-    document.getElementById('auth-section').style.display = 'none';
+    
+	await loadUserCalendars();
+	initYearWeek();
+	generateWeekdays(); // your existing function
+	
+	document.getElementById('auth-section').style.display = 'none';
     document.getElementById('main-section').style.display = 'block';
   }
 
@@ -160,7 +217,8 @@
   }
 
   async function createCalendarEvent() {
-    const date = document.getElementById('event-date').value;
+    const selectedCalendar = document.getElementById("user_calendars").value;
+	const date = document.getElementById('event-date').value;
     const title = document.getElementById('event-title').value.trim() || 'My event';
     if (!date || !selectedStart) return;
     const btn = document.getElementById('create-btn');
@@ -169,7 +227,7 @@
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     try {
       const response = await gapi.client.calendar.events.insert({
-        calendarId: 'primary',
+        calendarId: selectedCalendar,
         resource: {
           summary: title,
           start: { dateTime: date + 'T' + selectedStart + ':00', timeZone },
