@@ -332,14 +332,31 @@
       const res = await gapi.client.calendar.calendarList.list();
       const cals = res.result.items || [];
       const sel = document.getElementById('calendar-select');
+  
       sel.innerHTML = '';
+  
+      let primaryCalendarId = null;
+  
       cals.forEach(cal => {
         const opt = document.createElement('option');
         opt.value = cal.id;
         opt.textContent = cal.summary;
+  
+        if (cal.primary) {
+          primaryCalendarId = cal.id;
+        }
+  
         sel.appendChild(opt);
       });
-      if (cals.length) sel.value = cals[0].id;
+  
+      // ✅ Set default to primary calendar
+      if (primaryCalendarId) {
+        sel.value = primaryCalendarId;
+      } else if (cals.length) {
+        // fallback (just in case)
+        sel.value = cals[0].id;
+      }
+  
     } catch(e) {
       setStatus('Could not load calendars: ' + e.message, 'error');
     }
