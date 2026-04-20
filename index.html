@@ -238,9 +238,9 @@
   // Time slots config
   const SLOTS = {
     'N/A':       null,
-    'Morning':   { start: '08:00', end: '12:00' },
-    'Mid':       { start: '12:00', end: '15:00' },
-    'Afternoon': { start: '15:00', end: '18:00' }
+    'Morning':   { start: '08:00', end: '16:00' },
+    'Mid':       { start: '10:00', end: '18:00' },
+    'Afternoon': { start: '12:00', end: '20:00' }
   };
 
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -490,7 +490,7 @@
         await gapi.client.calendar.events.insert({
           calendarId,
           resource: {
-            summary: item.slot,
+            summary: item.slot + ' Shift',
             start: { dateTime: `${item.date}T${item.times.start}:00`, timeZone },
             end:   { dateTime: `${item.date}T${item.times.end}:00`,   timeZone }
           }
